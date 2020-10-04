@@ -1,0 +1,63 @@
+<!DOCTYPE <!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <input type="text" id="username" required>
+    <button id="goButton">Go</button>
+    <div>
+        <ul id="messages"></ul>
+    </div>
+    <div id="formMessage">
+    </div>
+    
+    <script src = "/socket.io/socket.io.js"></script>
+    <script src = "https://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+        goButton = $('#goButton');
+        inputName = $('#username');
+        messages = $('#messages');
+        formMessage = $('#formMessage');
+        var chat;
+        var sendButton;
+        var username;
+
+        function goChat(){
+            username = inputName.val();
+            $.post('/go-chat',{'name':username},(data)=>{
+                let groupname = JSON.parse(data).group;
+                let socketUrl = 'http://localhost:3000/' + groupname;
+                messages.append($('<li>').text("Join Group: " + groupname));
+                chat = io.connect(socketUrl);
+                chat.on('start', (msg) => {
+                    messages.append($('<li>').text(msg));
+                })
+                chat.on('room', function(msg){
+                    let jsonMsg = JSON.parse(msg);
+                    console.log(jsonMsg);
+                    messages.append($('<li>').text(jsonMsg.sender + ": " + jsonMsg.content));
+                });
+
+                goButton.remove();
+                inputName.remove();
+                formMessage.append('<input type=\'text\' id=\'aMessage\' required>');
+                formMessage.append('<button id=\'sendMessage\'>Send</button>');
+            
+                sendButton = $('#sendMessage')
+                sendButton.on('click',()=>{
+                    let inputMessage = $('#aMessage');
+                    let msg={sender:username,
+                            content:inputMessage.val()};
+                    chat.emit('a message', JSON.stringify(msg));
+                    inputMessage.val('');
+                });
+            });
+        }
+
+        goButton.on('click', goChat);
+       
+    </script>
+</body>
+</html>
